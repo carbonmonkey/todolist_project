@@ -1,3 +1,5 @@
+require 'bundler/setup'
+require 'date'
 require 'minitest/autorun'
 require 'minitest/reporters'
 Minitest::Reporters.use!
@@ -15,6 +17,29 @@ class TodoListTest < MiniTest::Test
     @list.add(@todo1)
     @list.add(@todo2)
     @list.add(@todo3)
+  end
+
+  def test_no_due_date
+    assert_nil(@todo1.due_date)
+  end
+
+  def test_due_date
+    due_date = Date.today + 3
+    @todo2.due_date = due_date
+    assert_equal(due_date, @todo2.due_date)
+  end
+
+  def test_to_s_with_due_date
+    @todo2.due_date = Date.civil(2017, 4, 15)
+    output = <<-OUTPUT.chomp.gsub(/^\s+/, '')
+    ---- Today's Todos ----
+    [ ] Buy milk
+    [ ] Clean room (Due: Saturday April 15)
+    [ ] Go to gym
+    OUTPUT
+
+    assert_equal(output, @list.to_s)
+
   end
 
   def test_to_a
@@ -155,5 +180,38 @@ class TodoListTest < MiniTest::Test
 
     assert_equal(list.title, @list.title)
     assert_equal(list.to_s, @list.select{ |todo| todo.done? }.to_s)
+  end
+
+  def test_find_by_title
+    assert_equal(@todo3, @list.find_by_title('Go to gym'))
+  end
+
+  def test_all_done
+    @list.mark_done_at(1)
+    assert_equal([@todo2], @list.all_done.to_a)
+  end
+
+  def test_all_not_done
+    assert_equal([@todo1, @todo2, @todo3], @list.all_not_done.to_a)
+  end
+
+  def test_mark_done
+    @list.mark_done('Buy milk')
+    assert(@todo1.done?)
+  end
+
+  def test_mark_all_done
+    @list.mark_all_done
+    assert(@todo1.done?)
+    assert(@todo2.done?)
+    assert(@todo3.done?)
+  end
+
+  def test_mark_all_undone
+    @list.mark_done_at(1)
+    @list.mark_all_undone
+    refute(@todo1.done)
+    refute(@todo3.done)
+    refute(@todo2.done)
   end
 end
